@@ -33,7 +33,34 @@ namespace spp6
 
         private void buttonCreateThread_Click(object sender, EventArgs e)
         {
-            myThreadPool = new ThreadPool();
+            int min = 0;
+            int max = 0;
+            try
+            {
+                min = Int32.Parse(textBoxMin.Text);
+                if (min < 2)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                MessageBox.Show("min не огонь! Берем 2.");
+            }
+
+            try
+            {
+                max = Int32.Parse(textBoxMax.Text);
+                if ((max < 2) || (max < min))
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                MessageBox.Show("max не огонь! Берем 5.");
+            }
+            myThreadPool = new ThreadPool(min, max);
             buttonCreateThread.Enabled = false;
         }
 

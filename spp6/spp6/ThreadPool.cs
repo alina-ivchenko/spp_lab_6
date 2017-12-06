@@ -13,12 +13,19 @@ namespace spp6
         private int min;
         private int max;
         private bool isWaiting = false;
+        //поток, управляющий потоками-рабочими
         private Thread localCycleThread;
+        //для lock'a потоков
         private object sync1 = new object();
+        //для тасков
         private object sync2 = new object();
+        //уведомление о добавлении задачи
         private static AutoResetEvent eTimeoutOrNewObj = new AutoResetEvent(true);
+        //список потоков
         private Dictionary<int, Thread> Threads = new Dictionary<int, Thread>();
+        //очередь заданий
         private Queue<TaskFunction> queueOfTasks = new Queue<TaskFunction>();
+
         public ThreadPool(int min = 2, int max = 5)
         {
             SetMinAmountOFThreads(min);
@@ -31,7 +38,7 @@ namespace spp6
 
         public void SetMinAmountOFThreads(int amountOfThreads)
         {
-            if (min > 1)
+            if (amountOfThreads > 1)
             {
                 min = amountOfThreads;
             }
@@ -43,7 +50,7 @@ namespace spp6
 
         public void SetMaxAmountOFThreads(int amountOfThreads)
         {
-            if (max > min)
+            if (amountOfThreads >= min)
             {
                 max = amountOfThreads;
             }
@@ -57,34 +64,41 @@ namespace spp6
         {
             lock (sync1)
             {
-                    if((Threads.Count() == max) && (!isWaiting))
-                    {
-                        Log.Show("!!! Was not added");
-                        return false;
-                    }
-                    else
-                    {
-                        queueOfTasks.Enqueue(addedTask);           
-                    }
+                //достигли максимального количества потоков и они все заняты
+                if ((Threads.Count() == max) && (!isWaiting))
+                {
+                    Log.Show("!!! Was not added");
+                    return false;
+                }
+                else
+                {
+                    queueOfTasks.Enqueue(addedTask);
+                    //уведомляем о задании
+                    eTimeoutOrNewObj.Set();
+                    Log.WriteToLogFile("task was added");
+                }
             }
-            Log.WriteToLogFile("task was added");
-            eTimeoutOrNewObj.Set();
+            
+            
             return true;
         }
 
         private void ProvideMultiThreading()
         {
-            //здесь должно контролироваться создание потоков
+            //контролируется создание потоков
             while (true)
             {
                 if ((GetCurrAmountOfThreads() < min) || (queueOfTasks.Count > 1 && GetCurrAmountOfThreads() < max))
                 {
+                    //создаем поток
                     var tempThread = new Thread(Exec);
                     tempThread.Start();
+                    //фоновый
                     tempThread.IsBackground = true;
                     Log.WriteToLogFile(tempThread.ManagedThreadId + ": was started");
                     lock (sync1)
                     {
+                        //добавляем поток в пул
                         Threads.Add(tempThread.ManagedThreadId, tempThread);
                     }
                 }
@@ -114,6 +128,7 @@ namespace spp6
                     }
                 }
 
+                //проверяем, достали ли задание из очереди
                 if (currTask != null)
                 {
                     currTask();
@@ -128,10 +143,11 @@ namespace spp6
                         isWaiting = true;
                         Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": queue is empty. Wait");
                         if (GetCurrAmountOfThreads() > min)
-                            isStoppedByEvent = eTimeoutOrNewObj.WaitOne(5000);
+                            isStoppedByEvent = eTimeoutOrNewObj.WaitOne(5000);//ждем 5 секунд, если заданий не получил, убиваем
                         else
                             isStoppedByEvent = eTimeoutOrNewObj.WaitOne();
                         isWaiting = false;
+                        //убиваем
                         if (!isStoppedByEvent)
                         {
                             //if (GetCurrAmountOfThreads() > min)
@@ -143,6 +159,7 @@ namespace spp6
                         }
                         else
                         {
+                            //изымаем из очереди задание
                             if (queueOfTasks.Count() != 0)
                             {
                                 currTask = queueOfTasks.Dequeue();
