@@ -1,0 +1,9 @@
+D:\лабы\СПП\6a\spp6\spp6\bin\Debug\spp6.exe.config
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.csprojResolveAssemblyReference.cache
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.Properties.Resources.resources
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.csproj.GenerateResource.Cache
+D:\лабы\СПП\6a\spp6\spp6\bin\Debug\spp6.exe
+D:\лабы\СПП\6a\spp6\spp6\bin\Debug\spp6.pdb
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.exe
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.pdb
+D:\лабы\СПП\6a\spp6\spp6\obj\Debug\spp6.mainForm.resources
