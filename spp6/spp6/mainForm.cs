@@ -7,12 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace spp6
 {
     delegate void InputStrDelegate(string str);
     public partial class mainForm : Form
     {
+        private ThreadPool myThreadPool;
         public mainForm()
         {
             InitializeComponent();
@@ -31,7 +33,16 @@ namespace spp6
 
         private void buttonCreateThread_Click(object sender, EventArgs e)
         {
-            var myThreadPool = new ThreadPool();
+            myThreadPool = new ThreadPool();
+        }
+
+        private void buttonTestTask_Click(object sender, EventArgs e)
+        {
+            myThreadPool.AddTask(() =>
+            {
+                Log.Show("Тест" + Environment.NewLine);
+                Thread.Sleep(1000);
+            });
         }
     }
 }

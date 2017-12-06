@@ -13,13 +13,15 @@ namespace spp6
         private int min;
         private int max;
         private Thread localCycleThread;
-        private object sync1;
-        private object sync2;
+        private object sync1 = new object();
+        private object sync2 = new object();
         private static AutoResetEvent eTimeoutOrNewObj = new AutoResetEvent(true);
         private Dictionary<int, Thread> Threads = new Dictionary<int, Thread>();
         private Queue<TaskFunction> queueOfTasks = new Queue<TaskFunction>();
         public ThreadPool(int min = 2, int max = 5)
         {
+            SetMinAmountOFThreads(min);
+            SetMaxAmountOFThreads(max);
             localCycleThread = new Thread(ProvideMultiThreading);
             localCycleThread.IsBackground = true;
             Log.Show("Multithreading was started");
@@ -52,8 +54,10 @@ namespace spp6
 
         public bool AddTask(TaskFunction addedTask)
         {
-            lock (sync2)
+            lock (sync1)
+            {
                 queueOfTasks.Enqueue(addedTask);
+            }
             Log.Show("task was added");
             eTimeoutOrNewObj.Set();
             return true;
@@ -129,7 +133,10 @@ namespace spp6
                         }
                         else
                         {
+                            currTask = queueOfTasks.Dequeue();                            
                             Log.Show(Thread.CurrentThread.ManagedThreadId + ": New Task was added. Stop Waiting");
+                            currTask();
+                            Log.Show(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
                         }
                     }
                 }
