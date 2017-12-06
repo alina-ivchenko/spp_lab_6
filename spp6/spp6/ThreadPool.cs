@@ -12,6 +12,7 @@ namespace spp6
     {
         private int min;
         private int max;
+        private bool isWaiting = false;
         private Thread localCycleThread;
         private object sync1 = new object();
         private object sync2 = new object();
@@ -24,7 +25,7 @@ namespace spp6
             SetMaxAmountOFThreads(max);
             localCycleThread = new Thread(ProvideMultiThreading);
             localCycleThread.IsBackground = true;
-            Log.Show("Multithreading was started");
+            Log.WriteToLogFile("Multithreading was started");
             localCycleThread.Start();
         }
 
@@ -56,9 +57,17 @@ namespace spp6
         {
             lock (sync1)
             {
-                queueOfTasks.Enqueue(addedTask);
+                    if((Threads.Count() == max) && (!isWaiting))
+                    {
+                        Log.Show("!!! Was not added");
+                        return false;
+                    }
+                    else
+                    {
+                        queueOfTasks.Enqueue(addedTask);           
+                    }
             }
-            Log.Show("task was added");
+            Log.WriteToLogFile("task was added");
             eTimeoutOrNewObj.Set();
             return true;
         }
@@ -73,7 +82,7 @@ namespace spp6
                     var tempThread = new Thread(Exec);
                     tempThread.Start();
                     tempThread.IsBackground = true;
-                    Log.Show(tempThread.ManagedThreadId + ": was started");
+                    Log.WriteToLogFile(tempThread.ManagedThreadId + ": was started");
                     lock (sync1)
                     {
                         Threads.Add(tempThread.ManagedThreadId, tempThread);
@@ -101,14 +110,14 @@ namespace spp6
                     if (queueOfTasks.Count != 0)
                     {
                         currTask = queueOfTasks.Dequeue(); //уже потокобезопасная
-                        Log.Show(Thread.CurrentThread.ManagedThreadId + ": Task dequeued");
+                        Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task dequeued");
                     }
                 }
 
                 if (currTask != null)
                 {
                     currTask();
-                    Log.Show(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
+                    Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
                 }
                 else
                 {
@@ -116,27 +125,31 @@ namespace spp6
                     {
                         //ситуация, когда очередь пуста
                         eTimeoutOrNewObj.Reset();
-                        Log.Show(Thread.CurrentThread.ManagedThreadId + ": queue is empty. Wait");
+                        isWaiting = true;
+                        Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": queue is empty. Wait");
                         if (GetCurrAmountOfThreads() > min)
                             isStoppedByEvent = eTimeoutOrNewObj.WaitOne(5000);
                         else
                             isStoppedByEvent = eTimeoutOrNewObj.WaitOne();
-
+                        isWaiting = false;
                         if (!isStoppedByEvent)
                         {
                             //if (GetCurrAmountOfThreads() > min)
                             //{
                             Threads.Remove(Thread.CurrentThread.ManagedThreadId);
-                            Log.Show(Thread.CurrentThread.ManagedThreadId + ": Stopped by timeout");
+                            Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Stopped by timeout");
                             Thread.CurrentThread.Abort();
                             //}
                         }
                         else
                         {
-                            currTask = queueOfTasks.Dequeue();                            
-                            Log.Show(Thread.CurrentThread.ManagedThreadId + ": New Task was added. Stop Waiting");
-                            currTask();
-                            Log.Show(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
+                            if (queueOfTasks.Count() != 0)
+                            {
+                                currTask = queueOfTasks.Dequeue();
+                                Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": New Task was added. Stop Waiting");
+                                currTask();
+                                Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
+                            }
                         }
                     }
                 }

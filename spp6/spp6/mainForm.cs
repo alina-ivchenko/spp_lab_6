@@ -34,15 +34,17 @@ namespace spp6
         private void buttonCreateThread_Click(object sender, EventArgs e)
         {
             myThreadPool = new ThreadPool();
+            buttonCreateThread.Enabled = false;
         }
 
         private void buttonTestTask_Click(object sender, EventArgs e)
         {
-            myThreadPool.AddTask(() =>
-            {
-                Log.Show("Тест" + Environment.NewLine);
-                Thread.Sleep(1000);
-            });
+            if (myThreadPool != null)
+                myThreadPool.AddTask(() =>
+                {
+                    Log.Show("Тест" + Environment.NewLine);
+                    Thread.Sleep(1000);
+                });
         }
     }
 }

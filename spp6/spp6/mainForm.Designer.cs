@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(mainForm));
             this.textBoxLog = new System.Windows.Forms.TextBox();
             this.buttonCreateThread = new System.Windows.Forms.Button();
             this.buttonTestTask = new System.Windows.Forms.Button();
@@ -55,9 +56,11 @@
             // 
             // buttonTestTask
             // 
-            this.buttonTestTask.Location = new System.Drawing.Point(184, 16);
+            this.buttonTestTask.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonTestTask.BackgroundImage")));
+            this.buttonTestTask.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.buttonTestTask.Location = new System.Drawing.Point(151, 12);
             this.buttonTestTask.Name = "buttonTestTask";
-            this.buttonTestTask.Size = new System.Drawing.Size(49, 47);
+            this.buttonTestTask.Size = new System.Drawing.Size(54, 54);
             this.buttonTestTask.TabIndex = 2;
             this.buttonTestTask.Text = "+";
             this.buttonTestTask.UseVisualStyleBackColor = true;
