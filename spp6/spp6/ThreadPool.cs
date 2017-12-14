@@ -14,7 +14,7 @@ namespace spp6
         private int max;
         private bool isWaiting = false;
         //поток, управляющий потоками-рабочими
-        private Thread localCycleThread;
+        private Task localCycleThread;
         //для lock'a потоков
         private object sync1 = new object();
         //для тасков
@@ -22,16 +22,15 @@ namespace spp6
         //уведомление о добавлении задачи
         private static AutoResetEvent eTimeoutOrNewObj = new AutoResetEvent(true);
         //список потоков
-        private Dictionary<int, Thread> Threads = new Dictionary<int, Thread>();
+        private Dictionary<int, Task> Threads = new Dictionary<int, Task>();
         //очередь заданий
-        private Queue<TaskFunction> queueOfTasks = new Queue<TaskFunction>();
+        private QueueLocked<TaskFunction> queueOfTasks = new QueueLocked<TaskFunction>();//!!!!
 
         public ThreadPool(int min = 2, int max = 5)
         {
             SetMinAmountOFThreads(min);
             SetMaxAmountOFThreads(max);
-            localCycleThread = new Thread(ProvideMultiThreading);
-            localCycleThread.IsBackground = true;
+            localCycleThread = new Task(ProvideMultiThreading);
             Log.WriteToLogFile("Multithreading was started");
             localCycleThread.Start();
         }
@@ -78,8 +77,6 @@ namespace spp6
                     Log.WriteToLogFile("task was added");
                 }
             }
-            
-            
             return true;
         }
 
@@ -91,15 +88,14 @@ namespace spp6
                 if ((GetCurrAmountOfThreads() < min) || (queueOfTasks.Count > 1 && GetCurrAmountOfThreads() < max))
                 {
                     //создаем поток
-                    var tempThread = new Thread(Exec);
+                    var tempThread = new Task(Exec);
                     tempThread.Start();
                     //фоновый
-                    tempThread.IsBackground = true;
-                    Log.WriteToLogFile(tempThread.ManagedThreadId + ": was started");
+                    Log.WriteToLogFile(tempThread.Id + ": was started");
                     lock (sync1)
                     {
                         //добавляем поток в пул
-                        Threads.Add(tempThread.ManagedThreadId, tempThread);
+                        Threads.Add(tempThread.Id, tempThread);
                     }
                 }
                 Thread.Sleep(500);
@@ -123,8 +119,8 @@ namespace spp6
                 {
                     if (queueOfTasks.Count != 0)
                     {
-                        currTask = queueOfTasks.Dequeue(); //уже потокобезопасная
-                        Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task dequeued");
+                        currTask = (TaskFunction)queueOfTasks.Dequeue();//!!! //уже потокобезопасная
+                        Log.WriteToLogFile(Task.CurrentId + ": Task dequeued");
                     }
                 }
 
@@ -132,7 +128,7 @@ namespace spp6
                 if (currTask != null)
                 {
                     currTask();
-                    Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
+                    Log.WriteToLogFile(Task.CurrentId + ": Task was proccessed");
                 }
                 else
                 {
@@ -162,10 +158,10 @@ namespace spp6
                             //изымаем из очереди задание
                             if (queueOfTasks.Count() != 0)
                             {
-                                currTask = queueOfTasks.Dequeue();
-                                Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": New Task was added. Stop Waiting");
+                                currTask = (TaskFunction)queueOfTasks.Dequeue();//!!!!
+                                Log.WriteToLogFile(Task.CurrentId + ": New Task was added. Stop Waiting");
                                 currTask();
-                                Log.WriteToLogFile(Thread.CurrentThread.ManagedThreadId + ": Task was proccessed");
+                                Log.WriteToLogFile(Task.CurrentId + ": Task was proccessed");
                             }
                         }
                     }
